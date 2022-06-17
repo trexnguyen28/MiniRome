@@ -1,18 +1,48 @@
-import React, {useRef, useState} from 'react';
-import WebView, {WebViewProps} from 'react-native-webview';
+import React, {useEffect, useRef, useState} from 'react';
+import WebView from 'react-native-webview';
 import {ScrollView} from 'react-native-gesture-handler';
-import {RefreshControl, Dimensions, StyleSheet} from 'react-native';
+import {View, RefreshControl, Dimensions, StyleSheet, Text} from 'react-native';
 import {
+  WebViewNavigation,
   WebViewScrollEvent,
-  WebViewNavigationEvent,
 } from 'react-native-webview/lib/WebViewTypes';
+import {ColorPalates, fontStyles} from '@themes';
 
 const styles = StyleSheet.create({
-  view: {flex: 1, height: '100%'},
+  view: {
+    flex: 1,
+    height: '100%',
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    ...fontStyles.Body,
+    color: ColorPalates.text,
+  },
 });
 
-const CoreWebView: React.FC<WebViewProps> = ({...webViewProps}) => {
+const WebViewError: React.FC<{text: string}> = ({text}) => {
+  return (
+    <View style={styles.errorContainer}>
+      <Text style={styles.errorText}>{`Can not open: ${text}`}</Text>
+    </View>
+  );
+};
+
+interface CoreWebViewProps {
+  uri: string;
+  onNavigationStateChange: (event: WebViewNavigation) => void;
+}
+
+const CoreWebView: React.FC<CoreWebViewProps> = ({
+  uri,
+  onNavigationStateChange,
+}) => {
   const [height, setHeight] = useState(Dimensions.get('screen').height);
+  const [hasError, setHasError] = useState(false);
   //
   const [isEnabled, setEnabled] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -28,16 +58,23 @@ const CoreWebView: React.FC<WebViewProps> = ({...webViewProps}) => {
 
   const onWebViewScroll = (e: WebViewScrollEvent) => {
     setEnabled(e.nativeEvent.contentOffset.y === 0);
-    webViewProps.onScroll && webViewProps.onScroll(e);
   };
 
-  const onLoad = (e: WebViewNavigationEvent) => {
+  const onLoad = () => {
     setIsRefreshing(false);
-    webViewProps.onLoad && webViewProps.onLoad(e);
   };
+
+  const onError = () => {
+    setHasError(true);
+  };
+
+  useEffect(() => {
+    setHasError(false);
+  }, [uri]);
 
   return (
     <ScrollView
+      contentContainerStyle={{flexGrow: 1}}
       showsVerticalScrollIndicator={false}
       onLayout={e => setHeight(e.nativeEvent.layout.height)}
       refreshControl={
@@ -48,13 +85,21 @@ const CoreWebView: React.FC<WebViewProps> = ({...webViewProps}) => {
         />
       }
       style={styles.view}>
-      <WebView
-        {...webViewProps}
-        ref={webViewRef}
-        onLoad={onLoad}
-        onScroll={onWebViewScroll}
-        style={[styles.view, {height}, webViewProps.style]}
-      />
+      {!hasError ? (
+        <WebView
+          ref={webViewRef}
+          source={{uri}}
+          onLoad={onLoad}
+          onError={onError}
+          onHttpError={onError}
+          onScroll={onWebViewScroll}
+          renderToHardwareTextureAndroid
+          style={[styles.view, {height}]}
+          onNavigationStateChange={onNavigationStateChange}
+        />
+      ) : (
+        <WebViewError text={uri} />
+      )}
     </ScrollView>
   );
 };
