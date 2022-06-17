@@ -1,11 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
-import WebView from 'react-native-webview';
+import WebView, {WebViewProps} from 'react-native-webview';
 import {ScrollView} from 'react-native-gesture-handler';
 import {View, RefreshControl, Dimensions, StyleSheet, Text} from 'react-native';
-import {
-  WebViewNavigation,
-  WebViewScrollEvent,
-} from 'react-native-webview/lib/WebViewTypes';
+import {WebViewScrollEvent} from 'react-native-webview/lib/WebViewTypes';
 import {ColorPalates, fontStyles} from '@themes';
 
 const styles = StyleSheet.create({
@@ -32,76 +29,89 @@ const WebViewError: React.FC<{text: string}> = ({text}) => {
   );
 };
 
-interface CoreWebViewProps {
+interface CoreWebViewProps
+  extends Pick<
+    WebViewProps,
+    'onLoadProgress' | 'onLoadStart' | 'onLoadEnd' | 'onNavigationStateChange'
+  > {
   uri: string;
-  onNavigationStateChange: (event: WebViewNavigation) => void;
+  onRefresh: () => void;
 }
 
-const CoreWebView: React.FC<CoreWebViewProps> = ({
-  uri,
-  onNavigationStateChange,
-}) => {
-  const [height, setHeight] = useState(Dimensions.get('screen').height);
-  const [hasError, setHasError] = useState(false);
-  //
-  const [isEnabled, setEnabled] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const webViewRef = useRef<WebView>(null);
+const CoreWebView = React.forwardRef<WebView, CoreWebViewProps>(
+  (
+    {
+      uri,
+      onRefresh,
+      onLoadStart,
+      onLoadEnd,
+      onLoadProgress,
+      onNavigationStateChange,
+    },
+    webViewRef,
+  ) => {
+    const [height, setHeight] = useState(Dimensions.get('screen').height);
+    const [hasError, setHasError] = useState(false);
+    //
+    const [isEnabled, setEnabled] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const onRefresh = () => {
-    if (webViewRef.current) {
+    const _onRefresh = () => {
       setIsRefreshing(true);
       //
-      webViewRef.current.reload();
-    }
-  };
+      onRefresh();
+    };
 
-  const onWebViewScroll = (e: WebViewScrollEvent) => {
-    setEnabled(e.nativeEvent.contentOffset.y === 0);
-  };
+    const onWebViewScroll = (e: WebViewScrollEvent) => {
+      setEnabled(e.nativeEvent.contentOffset.y === 0);
+    };
 
-  const onLoad = () => {
-    setIsRefreshing(false);
-  };
+    const onLoad = () => {
+      setIsRefreshing(false);
+    };
 
-  const onError = () => {
-    setHasError(true);
-  };
+    const onError = () => {
+      setHasError(true);
+    };
 
-  useEffect(() => {
-    setHasError(false);
-  }, [uri]);
+    useEffect(() => {
+      setHasError(false);
+    }, [uri]);
 
-  return (
-    <ScrollView
-      contentContainerStyle={{flexGrow: 1}}
-      showsVerticalScrollIndicator={false}
-      onLayout={e => setHeight(e.nativeEvent.layout.height)}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={onRefresh}
-          enabled={isEnabled}
-        />
-      }
-      style={styles.view}>
-      {!hasError ? (
-        <WebView
-          ref={webViewRef}
-          source={{uri}}
-          onLoad={onLoad}
-          onError={onError}
-          onHttpError={onError}
-          onScroll={onWebViewScroll}
-          renderToHardwareTextureAndroid
-          style={[styles.view, {height}]}
-          onNavigationStateChange={onNavigationStateChange}
-        />
-      ) : (
-        <WebViewError text={uri} />
-      )}
-    </ScrollView>
-  );
-};
+    return (
+      <ScrollView
+        contentContainerStyle={{flexGrow: 1}}
+        showsVerticalScrollIndicator={false}
+        onLayout={e => setHeight(e.nativeEvent.layout.height)}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={_onRefresh}
+            enabled={isEnabled}
+          />
+        }
+        style={styles.view}>
+        {!hasError ? (
+          <WebView
+            ref={webViewRef}
+            source={{uri}}
+            onLoad={onLoad}
+            onError={onError}
+            onLoadEnd={onLoadEnd}
+            onHttpError={onError}
+            onLoadStart={onLoadStart}
+            onScroll={onWebViewScroll}
+            onLoadProgress={onLoadProgress}
+            renderToHardwareTextureAndroid
+            style={[styles.view, {height}]}
+            onNavigationStateChange={onNavigationStateChange}
+          />
+        ) : (
+          <WebViewError text={uri} />
+        )}
+      </ScrollView>
+    );
+  },
+);
 
 export {CoreWebView};

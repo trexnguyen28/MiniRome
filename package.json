@@ -13,6 +13,7 @@
     "react": "17.0.2",
     "react-native": "0.68.2",
     "react-native-gesture-handler": "^2.4.2",
+    "react-native-svg": "^12.3.0",
     "react-native-webview": "^11.22.2"
   },
   "devDependencies": {

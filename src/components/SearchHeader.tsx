@@ -5,8 +5,10 @@ import {
   StyleSheet,
   NativeSyntheticEvent,
   TextInputSubmitEditingEventData,
+  Pressable,
 } from 'react-native';
 import {ColorPalates, fontStyles} from '@themes';
+import {BackArrowIcon} from '@assets';
 
 const styles = StyleSheet.create({
   container: {
@@ -45,6 +47,11 @@ const SearchHeader = React.forwardRef<TextInput, SearchHeaderProps>(
 
     return (
       <View style={styles.container}>
+        {enableGoBack ? (
+          <Pressable onPress={onGoBack} style={{paddingRight: 16}}>
+            <BackArrowIcon />
+          </Pressable>
+        ) : null}
         <View style={styles.searchBox}>
           <TextInput
             onBlur={onBlur}
