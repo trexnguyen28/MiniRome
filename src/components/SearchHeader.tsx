@@ -27,6 +27,8 @@ const styles = StyleSheet.create({
   searchText: {
     ...fontStyles.Title,
     color: ColorPalates.text,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
 });
 
